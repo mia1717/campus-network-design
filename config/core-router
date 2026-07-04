@@ -1,0 +1,59 @@
+# ============================================================
+# AR1220 核心路由器配置
+# ============================================================
+# 双核心冗余架构：CorR1 + CorR2
+# OSPF 骨干区 area 0 集中调度各分支区域路由
+# 上联防火墙/ISP，下联汇聚交换机
+# ============================================================
+
+# -------------------- 核心路由器1 (CorR1) --------------------
+
+system-view
+sysname CorR1
+
+# 接口 IP 地址配置
+interface GigabitEthernet 0/0/0
+ ip address 192.168.1.2 255.255.255.0
+
+interface GigabitEthernet 0/0/1
+ ip address 192.168.5.1 255.255.255.0
+
+interface GigabitEthernet 2/0/0
+ ip address 192.168.3.1 255.255.255.0
+
+interface GigabitEthernet 2/0/1
+ ip address 192.168.4.1 255.255.255.0
+
+# OSPF 动态路由协议
+ospf 1
+ area 0.0.0.0
+  network 0.0.0.0 255.255.255.255
+
+
+# -------------------- 核心路由器2 (CorR2) --------------------
+
+system-view
+sysname CorR2
+
+# 接口 IP 地址配置
+interface GigabitEthernet 0/0/0
+ ip address 192.168.2.2 255.255.255.0
+
+interface GigabitEthernet 0/0/1
+ ip address 192.168.5.2 255.255.255.0
+
+interface GigabitEthernet 2/0/0
+ ip address 192.168.7.1 255.255.255.0
+
+interface GigabitEthernet 2/0/1
+ ip address 192.168.6.1 255.255.255.0
+
+# OSPF 动态路由协议
+ospf 1
+ area 0.0.0.0
+  network 0.0.0.0 255.255.255.255
+
+# 验证命令
+# display ip routing-table          # 查看路由表
+# display ospf peer                 # 查看 OSPF 邻居状态
+# ping 192.168.5.2                  # 测试核心路由器间连通性
