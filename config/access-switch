@@ -1,0 +1,75 @@
+# ============================================================
+# S3700-26C-HI 接入交换机配置
+# ============================================================
+# 覆盖教学楼、办公楼、图书馆等区域
+# 通过 Trunk 上联汇聚交换机
+# MSTP 防环 + OSPF stub 区域 + 端口安全
+# ============================================================
+
+system-view
+sysname Access-LSW
+
+# -------------------- VLAN 批量创建 --------------------
+
+vlan batch 10 20 30 40 50 60
+
+# -------------------- 接入端口配置 --------------------
+
+# 教学楼区域接入端口（VLAN 10）
+interface Ethernet 0/0/1
+ port link-type access
+ port default vlan 10
+ port-security enable
+ port-security max-mac-num 2
+
+# 行政楼区域接入端口（VLAN 20）
+interface Ethernet 0/0/2
+ port link-type access
+ port default vlan 20
+ port-security enable
+ port-security max-mac-num 2
+
+# 图书馆区域接入端口（VLAN 30）
+interface Ethernet 0/0/3
+ port link-type access
+ port default vlan 30
+ port-security enable
+ port-security max-mac-num 2
+
+# -------------------- 上联 Trunk 端口 --------------------
+
+interface GigabitEthernet 0/0/1
+ port link-type trunk
+ port trunk allow-pass vlan all
+
+# -------------------- MSTP 多实例生成树配置 --------------------
+
+# 统一区域规划：教学楼、行政楼、图书馆 MSTP 区域统一
+stp region-configuration
+ region-name 1
+ revision-level 1
+ # 实例 1：学生区、教学区 VLAN
+ instance 1 vlan 10 20 40
+ # 实例 2：行政区、图书馆 VLAN
+ instance 2 vlan 30 50 60
+ active region-configuration
+
+# 启用 MSTP
+stp enable
+stp mode mstp
+
+# -------------------- OSPF Stub 区域路由 --------------------
+
+ospf 1 router-id 192.168.30.254
+ area 0.0.0.30
+  network 192.168.10.0 0.0.0.255
+  network 192.168.20.0 0.0.0.255
+  network 192.168.30.0 0.0.0.255
+  stub no-summary
+
+# 验证命令
+# display stp brief                  # 查看 STP 端口状态
+# display stp region-configuration   # 查看 MSTP 域配置
+# display port-security              # 查看端口安全状态
+# display ospf peer                  # 查看 OSPF 邻居
+# display vlan                       # 查看 VLAN 配置
