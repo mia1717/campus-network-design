@@ -1,0 +1,73 @@
+# ============================================================
+# S5700-28C-HI 汇聚交换机配置
+# ============================================================
+# 双汇聚冗余架构：Core-LSW1 + Core-LSW2
+# 与核心层通过 Eth-Trunk 链路聚合互联
+# 提供 DHCP 中继 + OSPF 路由 + VRRP 网关冗余
+# ============================================================
+
+system-view
+sysname Core-LSW
+
+# -------------------- 链路聚合配置（汇聚层 → 核心层）--------------------
+
+interface Eth-Trunk 1
+ port link-type trunk
+ port trunk allow-pass vlan all
+ mode lacp
+
+# 将物理接口加入聚合组
+interface GigabitEthernet 0/0/23
+ eth-trunk 1
+
+interface GigabitEthernet 0/0/24
+ eth-trunk 1
+
+# -------------------- DHCP 服务配置 --------------------
+
+dhcp enable
+
+# 在各 VLANIF 接口配置 DHCP 中继，指向核心 DHCP 服务器
+interface Vlanif 10
+ dhcp select relay
+ dhcp relay server-ip 192.168.200.10
+
+interface Vlanif 20
+ dhcp select relay
+ dhcp relay server-ip 192.168.200.10
+
+interface Vlanif 30
+ dhcp select relay
+ dhcp relay server-ip 192.168.200.10
+
+interface Vlanif 40
+ dhcp select relay
+ dhcp relay server-ip 192.168.200.10
+
+# -------------------- OSPF 路由配置 --------------------
+
+ospf 1 router-id 192.168.10.254
+ area 0.0.0.10
+  network 192.168.10.0 0.0.0.255
+  network 192.168.20.0 0.0.0.255
+  # 配置完全 Stub 区域，减少路由信息泛洪
+  stub no-summary
+
+# -------------------- VRRP 网关冗余 --------------------
+# 汇聚交换机之间配置 VRRP，提供虚拟网关
+
+interface Vlanif 10
+ vrrp vrid 10 virtual-ip 192.168.10.1
+ vrrp vrid 10 priority 120
+ vrrp vrid 10 preempt-mode timer delay 10
+
+interface Vlanif 20
+ vrrp vrid 20 virtual-ip 192.168.20.1
+ vrrp vrid 20 priority 120
+ vrrp vrid 20 preempt-mode timer delay 10
+
+# 验证命令
+# display eth-trunk 1               # 查看链路聚合状态
+# display vrrp brief                # 查看 VRRP 状态
+# display ospf peer                 # 查看 OSPF 邻居
+# display dhcp relay statistics     # 查看 DHCP 中继统计
